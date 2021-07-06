@@ -1,7 +1,6 @@
 ﻿using DevIO.API.Extensios;
 using DevIO.API.ViewModels;
 using DevIO.Business.Intefaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -10,13 +9,11 @@ using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
-using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace DevIO.API.Controllers
 {
-
     [Route("api")]
     public class AuthController : MainController
     {
@@ -52,7 +49,7 @@ namespace DevIO.API.Controllers
             if(result.Succeeded)
             {
                 await _signInManager.SignInAsync(User, false);
-                return CustomResponse(await GerarJwt(User.Email));
+                return CustomResponse(GerarJwt());
             }
              foreach(var error in result.Errors)
             {
@@ -68,7 +65,7 @@ namespace DevIO.API.Controllers
             if (!ModelState.IsValid) return CustomResponse(ModelState);
             var result = await _signInManager.PasswordSignInAsync(login.Email, login.Password,false,true);
 
-            if(result.Succeeded) return CustomResponse(await GerarJwt(login.Email));
+            if(result.Succeeded) return CustomResponse(GerarJwt());
 
             if(result.IsLockedOut)
             {
@@ -81,28 +78,8 @@ namespace DevIO.API.Controllers
 
         }
 
-        private async Task<LoginResponseViewModel> GerarJwt(string email)
+        private string GerarJwt()
         {
-            var user = await _userManager.FindByEmailAsync(email);
-            var claims = await _userManager.GetClaimsAsync(user);
-            var userRoles = await _userManager.GetRolesAsync(user);
-
-            claims.Add(new Claim(JwtRegisteredClaimNames.Sub, user.Id));
-            claims.Add(new Claim(JwtRegisteredClaimNames.Email, user.Email));
-            claims.Add(new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()));
-            claims.Add(new Claim(JwtRegisteredClaimNames.Nbf, ToUnixEpochDate(DateTime.UtcNow).ToString()));
-            claims.Add(new Claim(JwtRegisteredClaimNames.Iat, ToUnixEpochDate(DateTime.UtcNow).ToString(), ClaimValueTypes.Integer64));
-
-
-            foreach (var userRole in userRoles)
-            {
-                claims.Add(new Claim("role", userRole));
-            }
-
-            var identityClaims = new ClaimsIdentity();
-            identityClaims.AddClaims(claims);
-
-
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
 
@@ -110,7 +87,6 @@ namespace DevIO.API.Controllers
             {
                 Issuer = _appSettings.Emissor,
                 Audience = _appSettings.Validoem,
-                Subject = identityClaims,
                 Expires = DateTime.UtcNow.AddHours(2),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
 
@@ -119,9 +95,5 @@ namespace DevIO.API.Controllers
             var encodedToken = tokenHandler.WriteToken(token);
             return encodedToken;
         }
-
-        private static long ToUnixEpochDate(DateTime date)        
-            => (long)Math.Round((date.ToUniversalTime() - new DateTimeOffset(1970,1,1,0,0,0,TimeSpan.Zero)).TotalSeconds);
-        
     }
 }
