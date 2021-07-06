@@ -81,7 +81,7 @@ namespace DevIO.API.Controllers
 
         }
 
-        private async Task<string> GerarJwt(string email)
+        private async Task<LoginResponseViewModel> GerarJwt(string email)
         {
             var user = await _userManager.FindByEmailAsync(email);
             var claims = await _userManager.GetClaimsAsync(user);
