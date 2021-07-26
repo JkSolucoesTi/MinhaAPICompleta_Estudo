@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DevIO.API.Controllers;
 using DevIO.API.ViewModels;
 using DevIO.Business.Intefaces;
 using DevIO.Business.Models;
@@ -9,9 +10,10 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace DevIO.API.Controllers
+namespace DevIO.API.V1.Controllers
 {
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class ProdutosController : MainController
     {
         private readonly IProdutoRepository _produtoRepository;
@@ -78,13 +80,14 @@ namespace DevIO.API.Controllers
             return CustomResponse(produto);
         }
 
-
+        [HttpGet("obter-produto//{id:guid}")]
         private async Task<ProdutoViewModel> ObterProduto(Guid id)
         {
             return _mapper.Map<ProdutoViewModel>(await _produtoRepository.ObterProdutoFornecedor(id));
             
         }
 
+        [HttpPut]
         public async Task<IActionResult> Atualizar (Guid id , ProdutoViewModel produtoViewModel)
         {
             if (id != produtoViewModel.Id) return NotFound();

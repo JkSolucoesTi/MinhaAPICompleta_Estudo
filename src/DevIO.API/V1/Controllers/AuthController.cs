@@ -1,9 +1,12 @@
-﻿using DevIO.API.Extensios;
+﻿using DevIO.API.Controllers;
+using DevIO.API.Extensios;
 using DevIO.API.ViewModels;
 using DevIO.Business.Intefaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -14,28 +17,33 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DevIO.API.Controllers
+namespace DevIO.API.v1.Controllers
 {
-
-    [Route("api")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}")]
+//    [DisableCors]
     public class AuthController : MainController
     {
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly AppSettings _appSettings;
+        private readonly ILogger _logger;
 
         public AuthController(INotificador notificador , 
                               SignInManager<IdentityUser> signInManager ,
                               UserManager<IdentityUser> userManager,
                               IOptions<AppSettings> appSettings,
-                              IUser user
+                              IUser user,
+                              ILogger<AuthController> logger
                               ) : base(notificador,user)
         {
             _appSettings = appSettings.Value;
             _signInManager = signInManager;
+            _logger = logger;
             _userManager = userManager;
         }
 
+//        [EnableCors("Development")]
         [HttpPost("nova-conta")]
         public async Task<IActionResult>Registrar(RegisterUserViewModel register)
         {
@@ -69,7 +77,11 @@ namespace DevIO.API.Controllers
             if (!ModelState.IsValid) return CustomResponse(ModelState);
             var result = await _signInManager.PasswordSignInAsync(login.Email, login.Password,false,true);
 
-            if(result.Succeeded) return CustomResponse(await GerarJwt(login.Email));
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("Usuario logado com sucesso");
+                return CustomResponse(await GerarJwt(login.Email));
+            }
 
             if(result.IsLockedOut)
             {

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DevIO.API.Controllers;
 using DevIO.API.Extensios;
 using DevIO.API.ViewModels;
 using DevIO.Business.Intefaces;
@@ -10,10 +11,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace DevIO.API.Controllers
+namespace DevIO.API.V1.Controllers
 {
     [Authorize]
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class FornecedoresController : MainController
     {
         private readonly IFornecedorService _fornecedorService;
@@ -33,7 +35,7 @@ namespace DevIO.API.Controllers
             _enderecoRepository = enderecoRepository;
             _mapper = mapper;
         }
-
+        [AllowAnonymous]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<FornecedorViewModel>>> ObterTodos()
         {
@@ -67,8 +69,6 @@ namespace DevIO.API.Controllers
         //interagir com o usuario
         public async Task<ActionResult<FornecedorViewModel>>Adicionar(FornecedorViewModel fornecedorViewModel)
         {            
-
-
 
             if (!ModelState.IsValid)
             {
@@ -133,13 +133,13 @@ namespace DevIO.API.Controllers
 
             return CustomResponse(fornecedorViewModel);
         }
-
+        [HttpGet("obter-fornecedor-produtos-endereco/{id:guid}")]
         public async Task<FornecedorViewModel> ObterFornecedorProdutosEndereco(Guid id)
         {
             return _mapper.Map<FornecedorViewModel>(await _fornecedorRepository.ObterFornecedorProdutosEndereco(id));
         }
 
-
+        [HttpGet("obter-fornecedor-endereco/{id:guid}")]
         public async Task<FornecedorViewModel> ObterFornecedorEndereco(Guid id)
         {
             return _mapper.Map<FornecedorViewModel>(await _fornecedorRepository.ObterFornecedorEndereco(id));
